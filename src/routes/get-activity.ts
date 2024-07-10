@@ -3,6 +3,7 @@ import { ZodTypeProvider } from "fastify-type-provider-zod";
 import { dayjs } from "../lib/dayjs";
 import { z } from "zod";
 import { prisma } from "../lib/prisma";
+import { ClientError } from "../errors/client-errors";
 
 
 
@@ -29,7 +30,7 @@ export async function getActivity(app: FastifyInstance) {
       })
 
       if (!trip) {
-        throw new Error("Trip not found")
+        throw new ClientError("Trip not found")
       }
 
       const differenceInDaysBetweenTripSatartAndEnd = dayjs(trip.ends_at).diff(trip.starts_at, "days")
@@ -37,16 +38,17 @@ export async function getActivity(app: FastifyInstance) {
       const activities = Array
         .from({ length: differenceInDaysBetweenTripSatartAndEnd + 1 })
         .map((_, index) => {
-          const date = dayjs(trip.starts_at).add(index, "day")
+          const date = dayjs(trip.starts_at).add(index, "days")
 
           return {
             date: date.toDate(),
             activities: trip.activites.filter(activity => {
-              return dayjs(activity.occurs_at).isSame(date, "day")
+              return dayjs(activity.occurs_at).isSame(date, 'day')
             })
           }
         })
 
-      return { activity: trip.activites }
-    })
+      return { activities }
+    },
+  )
 }
